@@ -1,0 +1,275 @@
+openapi: 3.0.0
+
+info:
+  title: COMP2001 CW2 ProfileService API
+  description: >
+    REST API for managing user profiles backed by SQL Server stored procedures.
+    Includes role-based access control and Docker-ready deployment.
+  version: "1.0.0"
+
+servers:
+  - url: /api
+
+paths:
+
+  /health:
+    get:
+      summary: Health check
+      operationId: controllers.users_controller.health
+      responses:
+        "200":
+          description: API is running
+
+  /users:
+    get:
+      summary: List all users
+      operationId: controllers.users_controller.list_users
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserOut"
+
+    post:
+      summary: Create a new user
+      operationId: controllers.users_controller.create_user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserIn"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserOut"
+        "409":
+          description: Email already exists
+
+  /users/{user_id}:
+    get:
+      summary: Get user by ID
+      operationId: controllers.users_controller.get_user_by_id
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserOut"
+        "404":
+          description: User not found
+
+    put:
+      summary: Update user by ID
+      operationId: controllers.users_controller.update_user
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserIn"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserOut"
+        "404":
+          description: User not found
+        "409":
+          description: Email conflict
+
+    delete:
+      summary: Delete user by ID (Admin only)
+      operationId: controllers.users_controller.delete_user
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: X-Actor-UserId
+          in: header
+          required: true
+          schema:
+            type: integer
+          description: Acting user ID (must have Admin role)
+
+        - name: X-Auth-Email
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Authenticator email
+
+        - name: X-Auth-Password
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Authenticator password 
+          
+      responses:
+        "200":
+          description: User deleted
+        "403":
+          description: Forbidden (Admin role required)
+        "404":
+          description: User not found
+
+  /users/by-email:
+    get:
+      summary: Get user by email
+      operationId: controllers.users_controller.get_user_by_email
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserOut"
+        "404":
+          description: User not found
+
+  /roles:
+    get:
+      summary: List all available roles
+      operationId: controllers.users_controller.list_roles
+      responses:
+        "200":
+          description: Roles returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Role"
+
+  /users/{user_id}/roles:
+    get:
+      summary: Get roles assigned to a user
+      operationId: controllers.users_controller.get_user_roles
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User roles returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: integer
+                  roles:
+                    type: array
+                    items:
+                      type: string
+        "404":
+          description: User not found
+
+components:
+  schemas:
+
+    UserIn:
+      type: object
+      required:
+        - email
+        - firstName
+        - lastName
+      properties:
+        email:
+          type: string
+          example: ayush.test@plymouth.ac.uk
+        firstName:
+          type: string
+          example: Ayush
+        lastName:
+          type: string
+          example: Paudel
+        phoneNumber:
+          type: string
+          nullable: true
+        aboutMe:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        units:
+          type: string
+          enum: [Imperial, Metric]
+          nullable: true
+        activityPreference:
+          type: string
+          enum: [Speed, Pace]
+          nullable: true
+        height:
+          type: number
+          nullable: true
+        weight:
+          type: number
+          nullable: true
+        dob:
+          type: string
+          format: date
+          nullable: true
+        language:
+          type: string
+          nullable: true
+
+    UserOut:
+      allOf:
+        - $ref: "#/components/schemas/UserIn"
+        - type: object
+          properties:
+            userId:
+              type: integer
+              example: 7
+            createdAt:
+              type: string
+              example: "2026-01-01 22:23:36"
+
+    Role:
+      type: object
+      properties:
+        roleId:
+          type: integer
+          example: 1
+        roleName:
+          type: string
+          example: User

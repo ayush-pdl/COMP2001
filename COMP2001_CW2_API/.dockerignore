@@ -1,0 +1,22 @@
+# Python cache / compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local environment files (DO NOT include personal credentials)
+.env
+
+# Virtual environments / IDE files
+.venv/
+.conda/
+.vscode/
+
+# Git files
+.git/
+.gitignore
+
+# OS / system junk
+.DS_Store
+Thumbs.db
+
